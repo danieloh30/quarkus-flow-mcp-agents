@@ -4,7 +4,7 @@
 
 This demo shows how to build a governed, multi-agent article publishing workflow in Java using [Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/) and [LangChain4j](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html).
 
-A **WriterAgent** researches topics via [Brave Search MCP](https://github.com/anthropics/model-context-protocol-servers/tree/main/src/brave-search) and drafts a technical blog post, a **CriticAgent** reviews it for accuracy and clarity, and a `@LoopAgent` orchestrates the write-review-revise cycle (up to 3 iterations) until the critic approves. Governance rules are defined in [`AGENTS.md`](src/main/resources/AGENTS.md).
+A **WriterAgent** researches topics via [Brave Search MCP](https://www.npmjs.com/package/@brave/brave-search-mcp-server) and drafts a technical blog post, a **CriticAgent** reviews it for accuracy and clarity, and a `@LoopAgent` orchestrates the write-review-revise cycle (up to 3 iterations) until the critic approves. Governance rules are defined in [`AGENTS.md`](src/main/resources/AGENTS.md).
 
 ## Prerequisites
 
@@ -63,9 +63,10 @@ Tests use `@InjectMock` to mock the AI agents, so no API key is required.
 ```
 src/main/java/org/acme/
   agent/
-    WriterAgent.java          # Drafts or revises a technical article (@Agent, outputKey = "draft")
+    WriterAgent.java          # Drafts or revises a technical article (@Agent, @ToolBox, outputKey = "draft")
     CriticAgent.java          # Reviews the draft for accuracy and clarity (@Agent, outputKey = "review")
     ArticlePublisher.java     # Orchestrates the write-review loop (@LoopAgent, maxIterations = 3)
+    WebSearchTool.java        # Brave Search MCP client tool (@Tool, stdio transport)
   api/
     ArticleResource.java      # REST endpoint: POST /api/articles/generate
 src/main/resources/
@@ -77,7 +78,8 @@ src/main/resources/
 
 | Component | Role |
 |---|---|
-| `WriterAgent` | Researches the topic via Brave Search MCP and drafts a blog post (`@Agent`, `@McpToolBox`, `outputKey = "draft"`) |
+| `WriterAgent` | Researches the topic via Brave Search MCP and drafts a blog post (`@Agent`, `@ToolBox`, `outputKey = "draft"`) |
+| `WebSearchTool` | Connects to the Brave Search MCP server via stdio and exposes a `webSearch` tool to the LLM |
 | `CriticAgent` | Reviews the draft for technical accuracy and clarity (`@Agent`, `outputKey = "review"`) |
 | `ArticlePublisher` | Orchestrates the write-review loop with `@LoopAgent(maxIterations = 3)` and `@ExitCondition` (exits when the review starts with "APPROVED") |
 | `AGENTS.md` | Defines governance rules (accuracy, safety, output format) referenced by agent system messages |
