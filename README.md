@@ -59,8 +59,12 @@ Tests use `@InjectMock` to mock the AI agents, so no API key is required.
 
 ```
 src/main/java/org/acme/
-  agent/ContentAgents.java    # WriterAgent, CriticAgent, and ArticlePublisher (@LoopAgent)
-  api/ArticleResource.java    # REST endpoint: POST /api/articles/generate
+  agent/
+    WriterAgent.java          # Drafts or revises a technical article (@Agent, outputKey = "draft")
+    CriticAgent.java          # Reviews the draft for accuracy and clarity (@Agent, outputKey = "review")
+    ArticlePublisher.java     # Orchestrates the write-review loop (@LoopAgent, maxIterations = 3)
+  api/
+    ArticleResource.java      # REST endpoint: POST /api/articles/generate
 src/main/resources/
   AGENTS.md                   # Governance rules for agent behavior
   application.properties      # OpenAI and LangChain4j configuration
