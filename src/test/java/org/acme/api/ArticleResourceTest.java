@@ -2,7 +2,7 @@ package org.acme.api;
 
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import org.acme.agent.ContentAgents.ArticlePublisher;
+import org.acme.agent.ArticlePublisher;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;

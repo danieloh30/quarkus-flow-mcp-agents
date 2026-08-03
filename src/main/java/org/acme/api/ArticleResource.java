@@ -6,7 +6,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import org.acme.agent.ContentAgents.ArticlePublisher;
+import org.acme.agent.ArticlePublisher;
 
 import java.util.Map;
 
