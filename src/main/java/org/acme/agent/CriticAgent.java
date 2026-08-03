@@ -3,8 +3,6 @@ package org.acme.agent;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
-import dev.langchain4j.service.V;
-
 public interface CriticAgent {
 
     @Agent(outputKey = "review",
@@ -19,5 +17,5 @@ public interface CriticAgent {
 
             {draft}
             """)
-    String reviewDraft(@V("draft") String draft);
+    String reviewDraft(String draft);
 }
