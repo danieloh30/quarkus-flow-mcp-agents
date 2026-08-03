@@ -81,4 +81,4 @@ At build time, Quarkus Flow compiles the `@LoopAgent` annotation into a [CNCF Se
 
 - [Quarkus Flow + LangChain4j](https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html)
 - [Quarkus LangChain4j](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)
-- [LangChain4j MCP client](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)
+- [LangChain4j MCP client](https://docs.quarkiverse.io/quarkus-langchain4j/dev/mcp.html)
