@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quarkus Flow Article Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-elevated: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --success: #059669;
+      --warning: #d97706;
+      --error: #dc2626;
+      --writer: #6366f1;
+      --critic: #9333ea;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container { max-width: 920px; margin: 0 auto; padding: 0 20px; }
+
+    header {
+      padding: 32px 0 16px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+    header p { color: var(--text-secondary); font-size: 0.9rem; }
+    .badges { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+    .badge {
+      font-size: 0.7rem; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px; border: 1px solid var(--border); color: var(--text-secondary);
+    }
+
+    main { padding: 24px 0 48px; display: flex; flex-direction: column; gap: 24px; }
+
+    section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.8rem; }
+
+    /* Workflow SVG */
+    #workflow-section { position: relative; }
+    #workflow-svg { width: 100%; height: auto; display: block; }
+    .iteration-badge {
+      position: absolute; top: 16px; right: 24px;
+      font-size: 0.8rem; color: var(--text-secondary);
+      background: var(--surface); padding: 4px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    .iteration-badge span { color: var(--accent); font-weight: 600; }
+
+    /* SVG node styles */
+    .node-shape { fill: var(--surface); stroke: var(--border); stroke-width: 2; transition: all 0.3s ease; }
+    .node-label { fill: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; text-anchor: middle; dominant-baseline: central; }
+    .node-icon { fill: var(--text-secondary); }
+    .edge-line { stroke: var(--border); stroke-width: 1.5; fill: none; transition: stroke 0.3s ease; }
+    .edge-label { fill: var(--text-secondary); font-family: 'Inter', sans-serif; font-size: 11px; text-anchor: middle; }
+
+    .node-group.active .node-shape { stroke: var(--accent); stroke-width: 2.5; filter: drop-shadow(0 0 6px rgba(2,132,199,0.4)); }
+    .node-group.active.writer .node-shape { stroke: var(--writer); filter: drop-shadow(0 0 6px rgba(99,102,241,0.4)); }
+    .node-group.active.critic .node-shape { stroke: var(--critic); filter: drop-shadow(0 0 6px rgba(147,51,234,0.4)); }
+    .node-group.completed .node-shape { stroke: var(--success); stroke-width: 2; }
+    .node-group.completed .node-label { fill: var(--success); }
+
+    .edge-line.active { stroke: var(--accent); stroke-width: 2; }
+    .edge-line.loop-active { stroke: var(--warning); stroke-width: 2; stroke-dasharray: 8 4; animation: dash-flow 0.6s linear infinite; }
+    @keyframes dash-flow { to { stroke-dashoffset: -12; } }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .node-group.active .node-shape { animation: pulse 1.5s ease-in-out infinite; }
+
+    /* Input */
+    #input-section form { display: flex; gap: 12px; }
+    #topic-input {
+      flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); font-size: 0.95rem; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    #topic-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(2,132,199,0.15); }
+    #topic-input::placeholder { color: var(--text-secondary); }
+    #generate-btn {
+      padding: 12px 28px; border-radius: 8px; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent-hover), var(--accent)); color: #fff;
+      font-weight: 600; font-size: 0.95rem; font-family: inherit; white-space: nowrap; transition: opacity 0.2s;
+    }
+    #generate-btn:hover:not(:disabled) { opacity: 0.9; }
+    #generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .example-topics { margin-top: 12px; font-size: 0.85rem; color: var(--text-secondary); }
+    .chip {
+      display: inline-block; padding: 4px 12px; margin: 4px 4px 4px 0;
+      background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 20px;
+      cursor: pointer; font-size: 0.8rem; color: var(--text-secondary); transition: all 0.2s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Progress */
+    #progress-section.hidden, #article-section.hidden, #error-banner.hidden { display: none; }
+    #progress-log { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+    .log-entry {
+      display: flex; align-items: center; gap: 10px; padding: 6px 0;
+      font-size: 0.85rem; opacity: 0; transform: translateY(8px);
+      animation: log-in 0.3s ease forwards;
+    }
+    @keyframes log-in { to { opacity: 1; transform: translateY(0); } }
+    .log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .log-dot.system { background: var(--accent); }
+    .log-dot.writer { background: var(--writer); }
+    .log-dot.critic { background: var(--critic); }
+    .log-dot.decision { background: var(--warning); }
+    .log-dot.success { background: var(--success); }
+    .log-dot.error { background: var(--error); }
+    .log-time { color: var(--text-secondary); font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.75rem; min-width: 52px; }
+    .log-message { color: var(--text); }
+
+    /* Error */
+    #error-banner {
+      background: #fef2f2; border: 1px solid var(--error); border-radius: 8px;
+      padding: 12px 16px; color: var(--error); font-size: 0.9rem;
+    }
+
+    /* Article */
+    .article-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    #copy-btn {
+      padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary); cursor: pointer;
+      font-size: 0.8rem; font-family: inherit; transition: all 0.2s;
+    }
+    #copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .article-prose {
+      background: var(--surface-elevated); border-radius: 8px; padding: 24px; border-left: 3px solid var(--accent);
+      max-height: 600px; overflow-y: auto; line-height: 1.8;
+    }
+    .article-prose h1 { font-size: 1.4rem; font-weight: 700; margin: 20px 0 10px; color: var(--text); }
+    .article-prose h2 { font-size: 1.15rem; font-weight: 600; margin: 18px 0 8px; color: var(--text); }
+    .article-prose h3 { font-size: 1rem; font-weight: 600; margin: 14px 0 6px; color: var(--text); }
+    .article-prose p { margin-bottom: 12px; color: var(--text); }
+    .article-prose strong { color: var(--text); font-weight: 700; }
+    .article-prose code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'JetBrains Mono', monospace; }
+    .article-prose pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; }
+    .article-prose pre code { background: none; padding: 0; }
+    .article-prose ul, .article-prose ol { margin: 8px 0 12px 24px; }
+    .article-prose li { margin-bottom: 4px; }
+
+    /* Governance */
+    .governance-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .governance-panel summary {
+      padding: 16px 24px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+      color: var(--text-secondary); list-style: none; display: flex; align-items: center; gap: 8px;
+    }
+    .governance-panel summary::before { content: '\25B6'; font-size: 0.7rem; transition: transform 0.2s; }
+    .governance-panel[open] summary::before { transform: rotate(90deg); }
+    .governance-panel summary::-webkit-details-marker { display: none; }
+    .governance-content { padding: 0 24px 20px; }
+    .governance-content h3 { font-size: 0.85rem; font-weight: 600; margin: 12px 0 6px; color: var(--accent); }
+    .governance-content ul { margin-left: 20px; font-size: 0.85rem; color: var(--text-secondary); }
+    .governance-content li { margin-bottom: 4px; }
+
+    footer {
+      text-align: center; padding: 24px 0; border-top: 1px solid var(--border);
+      font-size: 0.8rem; color: var(--text-secondary);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      header h1 { font-size: 1.3rem; }
+      #input-section form { flex-direction: column; }
+      section { padding: 16px; }
+      #workflow-svg { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Quarkus Flow Article Generator</h1>
+      <p>Multi-Agent Workflow with WriterAgent, CriticAgent, and AGENTS.md Governance</p>
+      <div class="badges">
+        <span class="badge">Quarkus 3.38</span>
+        <span class="badge">LangChain4j</span>
+        <span class="badge">Quarkus Flow</span>
+        <span class="badge">OpenAI gpt-4o-mini</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- Workflow Diagram -->
+      <section id="workflow-section">
+        <h2>Workflow</h2>
+        <div class="iteration-badge">Iteration: <span id="iteration-count">-</span> / 3</div>
+        <svg id="workflow-svg" viewBox="0 0 740 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 4 L 0 8 z" fill="#94a3b8" class="arrow-fill"/>
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 4 L 0 8 z" fill="#0284c7"/>
+            </marker>
+            <marker id="arrow-loop" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 4 L 0 8 z" fill="#d97706"/>
+            </marker>
+          </defs>
+
+          <!-- Topic Node -->
+          <g id="node-topic" class="node-group">
+            <rect class="node-shape" x="10" y="110" width="90" height="40" rx="20"/>
+            <text class="node-label" x="55" y="130">Topic</text>
+          </g>
+
+          <!-- Edge: Topic -> Writer -->
+          <line id="edge-topic-writer" class="edge-line" x1="100" y1="130" x2="145" y2="130" marker-end="url(#arrow)"/>
+
+          <!-- WriterAgent Node -->
+          <g id="node-writer" class="node-group writer">
+            <rect class="node-shape" x="150" y="105" width="130" height="50" rx="8"/>
+            <text class="node-label" x="215" y="125" font-size="12">WriterAgent</text>
+            <text class="node-label" x="215" y="142" font-size="9" fill="#64748b">outputKey: "draft"</text>
+          </g>
+
+          <!-- Edge: Writer -> Critic -->
+          <line id="edge-writer-critic" class="edge-line" x1="280" y1="130" x2="325" y2="130" marker-end="url(#arrow)"/>
+
+          <!-- CriticAgent Node -->
+          <g id="node-critic" class="node-group critic">
+            <rect class="node-shape" x="330" y="105" width="130" height="50" rx="8"/>
+            <text class="node-label" x="395" y="125" font-size="12">CriticAgent</text>
+            <text class="node-label" x="395" y="142" font-size="9" fill="#64748b">outputKey: "review"</text>
+          </g>
+
+          <!-- Edge: Critic -> Decision -->
+          <line id="edge-critic-decision" class="edge-line" x1="460" y1="130" x2="500" y2="130" marker-end="url(#arrow)"/>
+
+          <!-- isApproved Decision Diamond -->
+          <g id="node-decision" class="node-group">
+            <polygon class="node-shape" points="545,85 590,130 545,175 500,130"/>
+            <text class="node-label" x="545" y="127" font-size="11">isApproved</text>
+            <text class="node-label" x="545" y="142" font-size="11">?</text>
+          </g>
+
+          <!-- Edge: Decision -> Extract (yes) -->
+          <line id="edge-decision-extract" class="edge-line" x1="590" y1="130" x2="630" y2="130" marker-end="url(#arrow)"/>
+          <text class="edge-label" x="610" y="120" fill="#059669" font-size="11" font-weight="600">yes</text>
+
+          <!-- extractArticle Node -->
+          <g id="node-extract" class="node-group">
+            <rect class="node-shape" x="635" y="110" width="95" height="40" rx="8"/>
+            <text class="node-label" x="682" y="127" font-size="10">extract</text>
+            <text class="node-label" x="682" y="140" font-size="10">Article</text>
+          </g>
+
+          <!-- Loop-back arrow: Decision -> Writer (no) -->
+          <path id="edge-loop" class="edge-line" d="M 545 175 C 545 240, 215 240, 215 155" marker-end="url(#arrow)" fill="none"/>
+          <text class="edge-label" x="380" y="248" fill="#d97706" font-size="11" font-weight="500">no (max 3 iterations)</text>
+        </svg>
+      </section>
+
+      <!-- Input -->
+      <section id="input-section">
+        <h2>Generate an Article</h2>
+        <form id="generate-form">
+          <input type="text" id="topic-input" placeholder="Enter a topic for the article..." maxlength="200" autocomplete="off">
+          <button type="submit" id="generate-btn">Generate</button>
+        </form>
+        <div class="example-topics">
+          Try:
+          <span class="chip">Why Quarkus is great for AI microservices</span>
+          <span class="chip">Getting started with LangChain4j in Java</span>
+          <span class="chip">Cloud-native Java with GraalVM</span>
+        </div>
+      </section>
+
+      <!-- Error Banner -->
+      <div id="error-banner" class="hidden"></div>
+
+      <!-- Progress Log -->
+      <section id="progress-section" class="hidden">
+        <h2>Agent Activity</h2>
+        <div id="progress-log"></div>
+      </section>
+
+      <!-- Article Output -->
+      <section id="article-section" class="hidden">
+        <div class="article-header">
+          <h2>Generated Article</h2>
+          <button id="copy-btn">Copy</button>
+        </div>
+        <div id="article-content" class="article-prose"></div>
+      </section>
+
+      <!-- AGENTS.md Governance -->
+      <details class="governance-panel">
+        <summary>AGENTS.md Governance Rules</summary>
+        <div class="governance-content">
+          <h3>Writer Agent Rules</h3>
+          <ul>
+            <li>You are an expert Java and Quarkus developer.</li>
+            <li>Write concise, technically accurate blog drafts based on the topic.</li>
+          </ul>
+          <h3>Critic Agent Rules</h3>
+          <ul>
+            <li>You are a strict editor checking for technical accuracy and clarity.</li>
+            <li>Output includes approved/feedback decision.</li>
+          </ul>
+          <h3>Security Boundaries</h3>
+          <ul>
+            <li>Never generate raw shell commands or suggest unsafe practices.</li>
+          </ul>
+        </div>
+      </details>
+    </main>
+
+    <footer>
+      <p>
+        Built with <a href="https://docs.quarkiverse.io/quarkus-flow/dev/langchain4j.html" target="_blank">Quarkus Flow</a>
+        &middot; <a href="https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html" target="_blank">Quarkus LangChain4j</a>
+        &middot; <a href="https://github.com/danieloh30/quarkus-flow-mcp-agents" target="_blank">GitHub</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const API_URL = '/api/articles/generate';
+    const MAX_ITERATIONS = 3;
+
+    const els = {
+      form: document.getElementById('generate-form'),
+      topicInput: document.getElementById('topic-input'),
+      generateBtn: document.getElementById('generate-btn'),
+      progressSection: document.getElementById('progress-section'),
+      progressLog: document.getElementById('progress-log'),
+      articleSection: document.getElementById('article-section'),
+      articleContent: document.getElementById('article-content'),
+      iterationCount: document.getElementById('iteration-count'),
+      copyBtn: document.getElementById('copy-btn'),
+      errorBanner: document.getElementById('error-banner'),
+    };
+
+    let state = { status: 'IDLE', startTime: 0, speedMultiplier: 1, aborted: false };
+
+    function delay(ms) {
+      return new Promise(r => setTimeout(r, ms * state.speedMultiplier));
+    }
+
+    function elapsed() {
+      const ms = Date.now() - state.startTime;
+      const s = Math.floor(ms / 1000);
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      const tenths = Math.floor((ms % 1000) / 100);
+      return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${tenths}`;
+    }
+
+    function addLog(message, type = 'system') {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-dot ${type}"></span><span class="log-time">${elapsed()}</span><span class="log-message">${message}</span>`;
+      els.progressLog.appendChild(entry);
+      els.progressLog.scrollTop = els.progressLog.scrollHeight;
+    }
+
+    function activateNode(id) {
+      const node = document.getElementById(id);
+      if (node) { node.classList.remove('completed'); node.classList.add('active'); }
+    }
+
+    function completeNode(id) {
+      const node = document.getElementById(id);
+      if (node) { node.classList.remove('active'); node.classList.add('completed'); }
+    }
+
+    function activateEdge(id, type = 'active') {
+      const edge = document.getElementById(id);
+      if (edge) {
+        edge.classList.add(type);
+        if (type === 'active') edge.setAttribute('marker-end', 'url(#arrow-active)');
+        if (type === 'loop-active') edge.setAttribute('marker-end', 'url(#arrow-loop)');
+      }
+    }
+
+    function completeEdge(id) {
+      const edge = document.getElementById(id);
+      if (edge) {
+        edge.classList.remove('active', 'loop-active');
+        edge.setAttribute('marker-end', 'url(#arrow)');
+      }
+    }
+
+    function resetAll() {
+      document.querySelectorAll('.node-group').forEach(n => n.classList.remove('active', 'completed'));
+      document.querySelectorAll('.edge-line').forEach(e => {
+        e.classList.remove('active', 'loop-active');
+        e.setAttribute('marker-end', 'url(#arrow)');
+      });
+      els.iterationCount.textContent = '-';
+    }
+
+    async function runIteration(iteration, approved) {
+      if (state.aborted) return;
+      els.iterationCount.textContent = iteration;
+
+      activateEdge('edge-topic-writer');
+      await delay(400);
+      completeEdge('edge-topic-writer');
+
+      activateNode('node-writer');
+      addLog(`WriterAgent drafting article (iteration ${iteration}/${MAX_ITERATIONS})...`, 'writer');
+      await delay(3000);
+      if (state.aborted) return;
+      addLog(`WriterAgent produced draft.`, 'writer');
+      completeNode('node-writer');
+
+      activateEdge('edge-writer-critic');
+      await delay(400);
+      completeEdge('edge-writer-critic');
+
+      activateNode('node-critic');
+      addLog(`CriticAgent reviewing draft for accuracy and clarity...`, 'critic');
+      await delay(3000);
+      if (state.aborted) return;
+
+      if (approved) {
+        addLog(`CriticAgent: APPROVED! Draft meets quality standards.`, 'success');
+      } else {
+        addLog(`CriticAgent: Needs revision. Providing feedback...`, 'decision');
+      }
+      completeNode('node-critic');
+
+      activateEdge('edge-critic-decision');
+      await delay(300);
+      completeEdge('edge-critic-decision');
+
+      activateNode('node-decision');
+      addLog(`isApproved? Evaluating review...`, 'decision');
+      await delay(800);
+      if (state.aborted) return;
+
+      if (approved) {
+        addLog(`Result: APPROVED`, 'success');
+        completeNode('node-decision');
+        activateEdge('edge-decision-extract');
+        await delay(300);
+        completeEdge('edge-decision-extract');
+        activateNode('node-extract');
+        addLog(`extractArticle: Formatting final output...`, 'system');
+        await delay(500);
+        completeNode('node-extract');
+      } else {
+        addLog(`Result: Not approved. Looping back to WriterAgent...`, 'decision');
+        completeNode('node-decision');
+        activateEdge('edge-loop', 'loop-active');
+        await delay(1200);
+        completeEdge('edge-loop');
+      }
+    }
+
+    async function runAnimation(topic) {
+      addLog(`Received topic: "${topic}"`, 'system');
+      activateNode('node-topic');
+      await delay(600);
+      completeNode('node-topic');
+
+      await runIteration(1, false);
+      if (state.aborted) return;
+      await runIteration(2, false);
+      if (state.aborted) return;
+      await runIteration(3, true);
+    }
+
+    function renderMarkdown(text) {
+      let html = text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${code}</code></pre>`)
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>');
+
+      const lines = html.split('\n');
+      const result = [];
+      let inList = false;
+      for (const line of lines) {
+        if (line.startsWith('<li>')) {
+          if (!inList) { result.push('<ul>'); inList = true; }
+          result.push(line);
+        } else {
+          if (inList) { result.push('</ul>'); inList = false; }
+          if (line.startsWith('<h') || line.startsWith('<pre>')) {
+            result.push(line);
+          } else if (line.trim()) {
+            result.push(`<p>${line}</p>`);
+          }
+        }
+      }
+      if (inList) result.push('</ul>');
+      return result.join('\n');
+    }
+
+    async function handleGenerate(topic) {
+      state = { status: 'GENERATING', startTime: Date.now(), speedMultiplier: 1, aborted: false };
+      resetAll();
+      els.progressLog.innerHTML = '';
+      els.progressSection.classList.remove('hidden');
+      els.articleSection.classList.add('hidden');
+      els.errorBanner.classList.add('hidden');
+      els.generateBtn.disabled = true;
+      els.generateBtn.textContent = 'Generating...';
+
+      const fetchController = new AbortController();
+      const timeout = setTimeout(() => fetchController.abort(), 120000);
+
+      const apiPromise = fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+        signal: fetchController.signal,
+      }).then(r => {
+        if (!r.ok) throw new Error(`Server error (${r.status})`);
+        return r.json();
+      });
+
+      let apiResult = null;
+      let apiError = null;
+      let apiDone = false;
+
+      apiPromise
+        .then(data => { apiResult = data; apiDone = true; state.speedMultiplier = 0.02; })
+        .catch(err => { apiError = err; apiDone = true; state.aborted = true; });
+
+      await runAnimation(topic);
+
+      if (!apiDone) {
+        addLog('Finalizing article...', 'system');
+        try { apiResult = await apiPromise; } catch (e) { apiError = e; }
+      }
+      clearTimeout(timeout);
+
+      if (apiError) {
+        state.status = 'ERROR';
+        const msg = apiError.name === 'AbortError'
+          ? 'Request timed out. The LLM may be slow -- please try again.'
+          : `Failed: ${apiError.message}. Is Quarkus running?`;
+        els.errorBanner.textContent = msg;
+        els.errorBanner.classList.remove('hidden');
+        addLog(msg, 'error');
+      } else {
+        state.status = 'COMPLETE';
+        addLog('Article generated successfully!', 'success');
+        els.articleContent.innerHTML = renderMarkdown(apiResult.article || '');
+        els.articleSection.classList.remove('hidden');
+        els.articleSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      els.generateBtn.disabled = false;
+      els.generateBtn.textContent = 'Generate';
+    }
+
+    els.form.addEventListener('submit', e => {
+      e.preventDefault();
+      const topic = els.topicInput.value.trim();
+      if (!topic) { els.topicInput.focus(); return; }
+      handleGenerate(topic);
+    });
+
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        els.topicInput.value = chip.textContent;
+        els.topicInput.focus();
+      });
+    });
+
+    els.copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(els.articleContent.innerText);
+        els.copyBtn.textContent = 'Copied!';
+        setTimeout(() => els.copyBtn.textContent = 'Copy', 2000);
+      } catch {
+        els.copyBtn.textContent = 'Failed';
+        setTimeout(() => els.copyBtn.textContent = 'Copy', 2000);
+      }
+    });
+  </script>
+</body>
+</html>

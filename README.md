@@ -25,7 +25,11 @@ export OPENAI_API_KEY=<your-key>
 ./mvnw quarkus:dev
 ```
 
-3. Generate an article:
+3. Open the Web UI at http://localhost:8080/ to generate articles interactively:
+
+![Quarkus Flow Web UI](assests/images/quarkus-flow-ui.png)
+
+4. Or use the REST API directly:
 
 ```shell
 curl -s -X POST http://localhost:8080/api/articles/generate \
@@ -41,7 +45,7 @@ The response contains the approved article after the write-review loop completes
 }
 ```
 
-4. Explore the Quarkus Flow Dev UI at http://localhost:8080/q/dev/ to inspect the generated workflow definition and execution traces.
+5. Explore the Quarkus Flow Dev UI at http://localhost:8080/q/dev/ to inspect the generated workflow definition and execution traces.
 
 ## Running tests
 
