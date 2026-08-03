@@ -3,13 +3,17 @@ package org.acme.agent;
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
+import io.quarkiverse.langchain4j.mcp.runtime.McpToolBox;
+
 public interface WriterAgent {
 
     @Agent(outputKey = "draft",
             description = "Drafts or revises a technical article based on the topic")
+    @McpToolBox("brave-search")
     @SystemMessage("""
             You are an expert Java and Quarkus developer.
-            Write concise, technically accurate blog drafts.
+            Use the brave_web_search tool to research the topic before writing.
+            Write concise, technically accurate blog drafts based on your research.
             Never generate raw shell commands or suggest unsafe practices.
             If the reviewer has given you feedback in a previous turn, revise the draft to address it.
             """)

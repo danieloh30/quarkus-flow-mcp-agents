@@ -4,19 +4,22 @@
 
 This demo shows how to build a governed, multi-agent article publishing workflow in Java using [Quarkus Flow](https://docs.quarkiverse.io/quarkus-flow/dev/) and [LangChain4j](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html).
 
-A **WriterAgent** drafts a technical blog post, a **CriticAgent** reviews it for accuracy and clarity, and a `@LoopAgent` orchestrates the write-review-revise cycle (up to 3 iterations) until the critic approves. Governance rules are defined in [`AGENTS.md`](src/main/resources/AGENTS.md).
+A **WriterAgent** researches topics via [Brave Search MCP](https://github.com/anthropics/model-context-protocol-servers/tree/main/src/brave-search) and drafts a technical blog post, a **CriticAgent** reviews it for accuracy and clarity, and a `@LoopAgent` orchestrates the write-review-revise cycle (up to 3 iterations) until the critic approves. Governance rules are defined in [`AGENTS.md`](src/main/resources/AGENTS.md).
 
 ## Prerequisites
 
 - Java 25+
 - An [OpenAI API key](https://platform.openai.com/api-keys)
+- A [Brave Search API key](https://brave.com/search/api/)
+- Node.js (for the Brave Search MCP server)
 
 ## Running the demo
 
-1. Export your OpenAI API key:
+1. Export your API keys:
 
 ```shell
 export OPENAI_API_KEY=<your-key>
+export BRAVE_API_KEY=<your-key>
 ```
 
 2. Start Quarkus in dev mode:
@@ -74,7 +77,7 @@ src/main/resources/
 
 | Component | Role |
 |---|---|
-| `WriterAgent` | Drafts or revises a blog post (`@Agent`, `outputKey = "draft"`) |
+| `WriterAgent` | Researches the topic via Brave Search MCP and drafts a blog post (`@Agent`, `@McpToolBox`, `outputKey = "draft"`) |
 | `CriticAgent` | Reviews the draft for technical accuracy and clarity (`@Agent`, `outputKey = "review"`) |
 | `ArticlePublisher` | Orchestrates the write-review loop with `@LoopAgent(maxIterations = 3)` and `@ExitCondition` (exits when the review starts with "APPROVED") |
 | `AGENTS.md` | Defines governance rules (accuracy, safety, output format) referenced by agent system messages |
